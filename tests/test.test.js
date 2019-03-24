@@ -8,30 +8,36 @@ describe(`contract`, () => {
   // console.dir(result);
   //   });
 
-  const sym = "JACFK";
+  const sym = "CONT";
 
-  test(`contract can create new token`, async () => {
+  test(`contract can create new token for contoso`, async () => {
     await sendTransaction({
       name: "create",
       data: {
-        issuer: "test1",
-        maximum_supply: `1000000.0000 ${sym}`
+        issuer: "contoso",
+        maximum_supply: `10000000.0000 ${sym}`
       }
     });
   });
 
-  test(`test1 can issue the new token`, async () => {
-    await sendTransaction({
-      name: "issue",
-      data: {
-        to: "test2",
-        quantity: `100.0000 ${sym}`,
-        memo: ""
-      },
-      actor: "test1"
-    });
+  //   test(`arbaro has balance`, async () => {
+  //     // await sendTransaction({
+  //     //   name: "issue",
+  //     //   data: {
+  //     //     to: "arbaro",
+  //     //     quantity: `1000.0000 ${sym}`,
+  //     //     memo: ""
+  //     //   },
+  //     //   actor: "test1"
+  //     // });
 
-    const { amount } = await getBalance("arbtoken", "test2", sym);
-    expect(amount).toBe("100.0000");
-  });
+  //     const { amount } = await getBalance("arbtoken", "arbaro", sym);
+  //     expect(amount).toBeGreaterThan(5000);
+  //   });
+
+  //   test("charlie received money", async () => {
+  //     const { amount } = await getBalance("arbtoken", "charlie", sym);
+  //     console.log(amount);
+  //     expect(amount).toBeGreaterThan(4999);
+  //   });
 });

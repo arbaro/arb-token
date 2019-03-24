@@ -8,13 +8,13 @@ async function action() {
       account: `eosio`,
       name: `updateauth`,
       data: {
-        account: CONTRACT_ACCOUNT,
+        account: "contoso",
         permission: `active`,
         auth: {
           threshold: 1,
           keys: [
             {
-              key: `EOS5LQEBeEKgqCdNNEWVBuqcjiUh8wgsUGS42pmGjS2SSN4u2oXqc`,
+              key: `EOS7rkVPRV3FD434Ux9K7GpNZpwQyQjNNsLLrS3FMQeLyX88MXj1P`,
               weight: 1
             }
           ],
@@ -22,16 +22,13 @@ async function action() {
             {
               permission: { actor: `arbaro`, permission: `active` },
               weight: 1
-            },
-            {
-              permission: { actor: `contoso`, permission: `active` },
-              weight: 1
             }
           ],
           waits: []
         },
         parent: `owner`
-      }
+      },
+      actor: "contoso"
     });
     console.log(`SUCCESS`);
     console.log(

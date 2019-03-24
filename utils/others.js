@@ -45,9 +45,10 @@ const getBalance = async (contract, account, tokenSymbol) => {
     tokenSymbol
   );
   if (result.length > 0) {
-    const [amount, symbol] = result[0].split(" ");
+    const [stringAmount, symbol] = result[0].split(" ");
     if (symbol !== tokenSymbol)
       throw "Requested symbol does not match symbol returned by RPC";
+    const amount = Number(stringAmount);
     return { amount, symbol };
   } else {
     return null;
