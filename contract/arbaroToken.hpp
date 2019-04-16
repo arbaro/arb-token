@@ -7,6 +7,8 @@
 #include <eosiolib/asset.hpp>
 #include <eosiolib/eosio.hpp>
 
+#define EOS_SYMBOL symbol("EOS", 4)
+
 #include <string>
 
 using std::string;
@@ -23,7 +25,11 @@ CONTRACT arbaroToken : public eosio::contract
     ACTION issue(name to, asset quantity, string memo);
 
     ACTION retire(asset quantity, string memo);
-
+    
+    ACTION feed(name from,
+                name to,
+                asset quantity,
+                string memo);
     ACTION transfer(name from,
                     name to,
                     asset quantity,
@@ -51,6 +57,7 @@ CONTRACT arbaroToken : public eosio::contract
     TABLE account
     {
         asset balance;
+        asset lastclaim;
 
         uint64_t primary_key() const { return balance.symbol.code().raw(); }
     };
@@ -60,6 +67,7 @@ CONTRACT arbaroToken : public eosio::contract
         asset supply;
         asset max_supply;
         name issuer;
+        asset totaldividends;
 
         uint64_t primary_key() const { return supply.symbol.code().raw(); }
     };
@@ -69,4 +77,5 @@ CONTRACT arbaroToken : public eosio::contract
 
     void sub_balance(name owner, asset value);
     void add_balance(name owner, asset value, name ram_payer);
+    void claim(name owner, symbol tokensym);
 };

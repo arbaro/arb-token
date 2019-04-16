@@ -17,7 +17,7 @@
   "license": "MIT",
   "eslintConfig": {
     "extends": [
-      "cmichel/node"
+      
     ]
   },
   "engines": {

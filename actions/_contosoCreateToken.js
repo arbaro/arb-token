@@ -6,7 +6,7 @@ async function action() {
   try {
     const transaction = await sendTransaction({
       name: `create`,
-      actor: CONTRACT_ACCOUNT,
+      actor: "contoso",
       data: {
         issuer: `contoso`,
         maximum_supply: `10000000.0000 CONT`

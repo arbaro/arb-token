@@ -1,5 +1,5 @@
 {
-    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT Tue Mar  5 13:26:00 2019",
+    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT Tue Apr 16 16:25:23 2019",
     "version": "eosio::abi/1.1",
     "structs": [
         {
@@ -8,6 +8,10 @@
             "fields": [
                 {
                     "name": "balance",
+                    "type": "asset"
+                },
+                {
+                    "name": "lastclaim",
                     "type": "asset"
                 }
             ]
@@ -55,6 +59,32 @@
                 {
                     "name": "issuer",
                     "type": "name"
+                },
+                {
+                    "name": "totaldividends",
+                    "type": "asset"
+                }
+            ]
+        },
+        {
+            "name": "feed",
+            "base": "",
+            "fields": [
+                {
+                    "name": "from",
+                    "type": "name"
+                },
+                {
+                    "name": "to",
+                    "type": "name"
+                },
+                {
+                    "name": "quantity",
+                    "type": "asset"
+                },
+                {
+                    "name": "memo",
+                    "type": "string"
                 }
             ]
         },
@@ -141,6 +171,11 @@
         {
             "name": "create",
             "type": "create",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "feed",
+            "type": "feed",
             "ricardian_contract": ""
         },
         {

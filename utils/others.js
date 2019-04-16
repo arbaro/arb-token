@@ -38,12 +38,13 @@ const sendTransaction = async args => {
   );
 };
 
-const getBalance = async (contract, account, tokenSymbol) => {
+const getBalance = async (contract, account, tokenSymbol = 'EOS') => {
   const result = await api.rpc.get_currency_balance(
     contract,
     account,
     tokenSymbol
   );
+  console.log(result, 'was contained in result')
   if (result.length > 0) {
     const [stringAmount, symbol] = result[0].split(" ");
     if (symbol !== tokenSymbol)

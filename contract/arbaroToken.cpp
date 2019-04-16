@@ -18,8 +18,9 @@ void arbaroToken::create(name issuer,
     auto existing = statstable.find(sym.code().raw());
     eosio_assert(existing == statstable.end(), "token with symbol already exists");
 
-    statstable.emplace(_self, [&](auto &s) {
+    statstable.emplace(issuer, [&](auto &s) {
         s.supply.symbol = maximum_supply.symbol;
+        s.totaldividends.symbol = maximum_supply.symbol;
         s.max_supply = maximum_supply;
         s.issuer = issuer;
     });
@@ -80,17 +81,28 @@ void arbaroToken::retire(asset quantity, string memo)
     sub_balance(st.issuer, quantity);
 }
 
+void arbaroToken::feed(name from,
+                       name to,
+                       asset quantity,
+                       string memo)
+{
+    print("feed happened");
+}
+
 void arbaroToken::transfer(name from,
                            name to,
                            asset quantity,
                            string memo)
 {
+    print("hello world");
+
     eosio_assert(from != to, "cannot transfer to self");
     require_auth(from);
     eosio_assert(is_account(to), "to account does not exist");
     auto sym = quantity.symbol.code();
     stats statstable(_self, sym.raw());
     const auto &st = statstable.get(sym.raw());
+
 
     require_recipient(from);
     require_recipient(to);
@@ -104,6 +116,31 @@ void arbaroToken::transfer(name from,
 
     sub_balance(from, quantity);
     add_balance(to, quantity, payer);
+}
+
+
+void arbaroToken::claim(name owner, symbol tokensym)
+{
+
+    accounts to_acnts(_self, owner.value);
+    auto to = to_acnts.find(tokensym.code().raw());
+    eosio_assert(to != to_acnts.end(), "failed to find account with token");
+
+    uint64_t amount = 1;
+
+    action(
+        permission_level{_self, "active"_n},
+        "eosio.token"_n,
+        "transfer"_n,
+        std::make_tuple(_self, owner, asset(amount, EOS_SYMBOL), string("Dividend Reward")))
+        .send();
+
+
+    // to_acnts.modify(to, same_payer, [&](auto &a) {
+    //     a.lastclaim = value;
+    // });
+
+
 }
 
 void arbaroToken::sub_balance(name owner, asset value)
@@ -122,14 +159,21 @@ void arbaroToken::add_balance(name owner, asset value, name ram_payer)
 {
     accounts to_acnts(_self, owner.value);
     auto to = to_acnts.find(value.symbol.code().raw());
+
+    auto sym = value.symbol;
+    stats statstable(_self, sym.code().raw());
+    auto itr = statstable.find(sym.code().raw());
+
     if (to == to_acnts.end())
     {
         to_acnts.emplace(ram_payer, [&](auto &a) {
             a.balance = value;
+            a.lastclaim = itr->totaldividends;
         });
     }
     else
     {
+        claim(owner, sym);
         to_acnts.modify(to, same_payer, [&](auto &a) {
             a.balance += value;
         });
@@ -170,13 +214,13 @@ extern "C" void apply(uint64_t receiver, uint64_t code, uint64_t action)
 {
     if (code == "eosio.token"_n.value && action == "transfer"_n.value)
     {
-        eosio::execute_action(eosio::name(receiver), eosio::name(code), &arbaroToken::transfer);
+        eosio::execute_action(eosio::name(receiver), eosio::name(code), &arbaroToken::feed);
     }
     else if (code == receiver)
     {
         switch (action)
         {
-            EOSIO_DISPATCH_HELPER(arbaroToken, (create)(issue)(retire)(transfer)(open)(close))
+            EOSIO_DISPATCH_HELPER(arbaroToken, (create)(issue)(retire)(transfer)(open)(close)(feed))
         }
     }
 }
