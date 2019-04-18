@@ -167,5 +167,74 @@ describe(`contract`, () => {
 
   })
 
+  test(`test 1 can send 200 shares to test2`, async() => {
+
+    const beforeShareBalance = await getBalance('test2', CONTRACT_ACCOUNT, sym);
+    expect(beforeShareBalance).toBeFalsy()
+
+    await sendTransaction({
+      name: 'transfer',
+      actor: 'test1',
+      data: {
+        from : 'test1',
+        to: "test2",
+        quantity: `200.0000 ${sym}`,
+        memo: "Thanks!"
+      }
+    })
+
+    const afterShareBalance = await getBalance('test2', CONTRACT_ACCOUNT, sym);
+    expect(afterShareBalance.amount).toBe(200);
+    expect(await lastClaimOf('test2', sym)).toBe(4.5);
+
+  })
+
+
+  test(`test 3 can issue another dividend`, async() => {
+    
+    await sendTransaction({
+      account: 'eosio.token',
+      name: 'transfer',
+      actor: 'test3',
+      data: {
+        from: 'test3',
+        to: "arbtoken",
+        quantity: "1.5000 EOS",
+        memo: `${sym}:4`
+      }
+    })
+
+    const table = await getTable("stat", sym);
+    expect(table.rows).toContainEqual({
+      supply: `1000.0000 ${sym}`,
+      max_supply: `10000000.0000 ${sym}`,
+      issuer: 'contoso',
+      totaldividends: `6.0000 EOS`
+    })
+
+  })
+
+
+  test(`test2 can claim his dividend`, async() => {
+
+    const beforeBalance = await getBalance('test2');
+    expect(await lastClaimOf('test2', sym)).toBe(4.5);
+
+    await sendTransaction({
+      name: 'claim',
+      actor: 'test2',
+      data: {
+        owner: 'test2',
+        tokensym: `4,${sym}`
+      }
+    })
+
+    const afterBalance = await getBalance('test2');
+    console.log({ beforeBalance, afterBalance })
+    expect(afterBalance.amount).toBeGreaterThan(beforeBalance.amount)
+    expect(await lastClaimOf('test2', sym)).toBe(6);
+    expect(afterBalance.amount).toBe(beforeBalance.amount + 0.3);
+
+  })
 
 });
