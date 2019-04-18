@@ -8,9 +8,9 @@ async function action() {
             name: `create`,
             actor: CONTRACT_ACCOUNT,
             data: {
-                issuer: `issuer`,
-                maximum_supply: `maximum_supply`,
-            },
+    "issuer": "issuer",
+    "maximum_supply": "maximum_supply"
+},
         })
         console.log(`SUCCESS`)
         console.log(

@@ -8,7 +8,7 @@ describe(`contract`, () => {
   // console.dir(result);
   //   });
 
-  const sym = "FOM";
+  const sym = "FOP";
 
   test(`contract can create new token for contoso`, async () => {
 
@@ -26,7 +26,7 @@ describe(`contract`, () => {
       supply: `0.0000 ${sym}`,
       max_supply: `10000000.0000 ${sym}`,
       issuer: 'contoso',
-      totaldividends: `0.0000 ${sym}`
+      totaldividends: `0.0000 EOS`
     })
 
 
@@ -48,8 +48,35 @@ describe(`contract`, () => {
     const tableBalance = await getTable("accounts", "test1")
     const obj = tableBalance.rows.filter(x => x.balance.split(" ")[1] === sym)[0]
 
-    expect(obj.lastclaim).toBe(`0.0000 ${sym}`)
+    expect(obj.lastclaim).toBe(`0.0000 EOS`)
 
+
+  })
+
+  test(`test2 can issue a dividend`, async() => {
+
+
+    await sendTransaction({
+      account: 'eosio.token',
+      name: 'transfer',
+      actor: 'test2',
+      data: {
+        from: 'test2',
+        to: "arbtoken",
+        quantity: "2.0000 EOS",
+        memo: "whatever"
+      }
+    })
+
+    
+    const table = await getTable("stat", sym);
+    expect(table.rows).toContainEqual({
+      supply: `1000.0000 ${sym}`,
+      max_supply: `10000000.0000 ${sym}`,
+      issuer: 'contoso',
+      totaldividends: `2.0000 EOS`
+    })
+    
 
   })
 

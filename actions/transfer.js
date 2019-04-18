@@ -7,12 +7,12 @@ async function action() {
         await sendTransaction({
             account: `eosio.token`,
             name: `transfer`,
-            actor: `test2`,
+            actor: `test1`,
             data: {
-                from: `test2`,
+                from: `test1`,
                 to: CONTRACT_ACCOUNT,
-                quantity: `2.0000 EOS`,
-                memo: "s",
+                quantity: `3.0000 EOS`,
+                memo: 'salt',
             },
         })
         console.log(`SUCCESS`)

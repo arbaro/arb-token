@@ -1,5 +1,5 @@
 {
-    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT Tue Apr 16 16:25:23 2019",
+    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT Thu Apr 18 13:40:41 2019",
     "version": "eosio::abi/1.1",
     "structs": [
         {
@@ -67,13 +67,9 @@
             ]
         },
         {
-            "name": "feed",
+            "name": "issue",
             "base": "",
             "fields": [
-                {
-                    "name": "from",
-                    "type": "name"
-                },
                 {
                     "name": "to",
                     "type": "name"
@@ -89,9 +85,13 @@
             ]
         },
         {
-            "name": "issue",
+            "name": "issuediv",
             "base": "",
             "fields": [
+                {
+                    "name": "from",
+                    "type": "name"
+                },
                 {
                     "name": "to",
                     "type": "name"
@@ -174,13 +174,13 @@
             "ricardian_contract": ""
         },
         {
-            "name": "feed",
-            "type": "feed",
+            "name": "issue",
+            "type": "issue",
             "ricardian_contract": ""
         },
         {
-            "name": "issue",
-            "type": "issue",
+            "name": "issuediv",
+            "type": "issuediv",
             "ricardian_contract": ""
         },
         {

@@ -20,7 +20,7 @@ void arbaroToken::create(name issuer,
 
     statstable.emplace(issuer, [&](auto &s) {
         s.supply.symbol = maximum_supply.symbol;
-        s.totaldividends.symbol = maximum_supply.symbol;
+        s.totaldividends.symbol = EOS_SYMBOL;
         s.max_supply = maximum_supply;
         s.issuer = issuer;
     });
@@ -81,12 +81,40 @@ void arbaroToken::retire(asset quantity, string memo)
     sub_balance(st.issuer, quantity);
 }
 
-void arbaroToken::feed(name from,
+void arbaroToken::issuediv(name from,
                        name to,
+                       
                        asset quantity,
                        string memo)
 {
-    print("feed happened");
+    print("issuediv happened");
+    // string x = string("FOP");
+    // auto sym = quantity.symbol;
+
+
+    // Hitting the issuediv action directly
+    // INCREASES the total dividends (Y)
+    // Unable to instantiate the DB when hitting it
+    // from the transfer action
+    // FIX: Instantiate DB when engaging from 'transfer'
+
+
+    symbol sym = symbol("FOP", 4);
+    print(_self);
+    print("was self");
+    print(sym.code().raw());
+    stats statstable("arbtoken"_n, sym.code().raw());
+    print("Table next");
+    print(statstable.get_scope());
+    auto existing = statstable.find(sym.code().raw());
+    eosio_assert(existing != statstable.end(), "token with symbol does not exist");
+
+    // const auto &st = *existing;
+
+    statstable.modify(existing, same_payer, [&](auto &s) {
+        s.totaldividends += quantity;
+    });
+
 }
 
 void arbaroToken::transfer(name from,
@@ -94,7 +122,6 @@ void arbaroToken::transfer(name from,
                            asset quantity,
                            string memo)
 {
-    print("hello world");
 
     eosio_assert(from != to, "cannot transfer to self");
     require_auth(from);
@@ -214,13 +241,13 @@ extern "C" void apply(uint64_t receiver, uint64_t code, uint64_t action)
 {
     if (code == "eosio.token"_n.value && action == "transfer"_n.value)
     {
-        eosio::execute_action(eosio::name(receiver), eosio::name(code), &arbaroToken::feed);
+        eosio::execute_action(eosio::name(receiver), eosio::name(code), &arbaroToken::issuediv);
     }
     else if (code == receiver)
     {
         switch (action)
         {
-            EOSIO_DISPATCH_HELPER(arbaroToken, (create)(issue)(retire)(transfer)(open)(close)(feed))
+            EOSIO_DISPATCH_HELPER(arbaroToken, (create)(issue)(retire)(transfer)(open)(close)(issuediv))
         }
     }
 }

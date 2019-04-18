@@ -8,10 +8,10 @@ async function action() {
             name: `issue`,
             actor: CONTRACT_ACCOUNT,
             data: {
-                to: `to`,
-                quantity: `quantity`,
-                memo: `memo`,
-            },
+    "to": "to",
+    "quantity": "quantity",
+    "memo": "memo"
+},
         })
         console.log(`SUCCESS`)
         console.log(

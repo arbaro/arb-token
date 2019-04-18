@@ -25,11 +25,8 @@ CONTRACT arbaroToken : public eosio::contract
     ACTION issue(name to, asset quantity, string memo);
 
     ACTION retire(asset quantity, string memo);
-    
-    ACTION feed(name from,
-                name to,
-                asset quantity,
-                string memo);
+
+
     ACTION transfer(name from,
                     name to,
                     asset quantity,
@@ -38,6 +35,11 @@ CONTRACT arbaroToken : public eosio::contract
     ACTION open(name owner, const symbol &symbol, name ram_payer);
 
     ACTION close(name owner, const symbol &symbol);
+
+    ACTION issuediv(name from,
+            name to,
+            asset quantity,
+            string memo);
 
     static asset get_supply(name token_contract_account, symbol_code sym_code)
     {
@@ -78,4 +80,5 @@ CONTRACT arbaroToken : public eosio::contract
     void sub_balance(name owner, asset value);
     void add_balance(name owner, asset value, name ram_payer);
     void claim(name owner, symbol tokensym);
+
 };

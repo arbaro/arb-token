@@ -8,9 +8,9 @@ async function action() {
             name: `retire`,
             actor: CONTRACT_ACCOUNT,
             data: {
-                quantity: `quantity`,
-                memo: `memo`,
-            },
+    "quantity": "quantity",
+    "memo": "memo"
+},
         })
         console.log(`SUCCESS`)
         console.log(

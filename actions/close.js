@@ -8,9 +8,9 @@ async function action() {
             name: `close`,
             actor: CONTRACT_ACCOUNT,
             data: {
-                owner: `owner`,
-                symbol: `symbol`,
-            },
+    "owner": "owner",
+    "symbol": "symbol"
+},
         })
         console.log(`SUCCESS`)
         console.log(
