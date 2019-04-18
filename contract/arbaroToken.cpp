@@ -87,41 +87,17 @@ void arbaroToken::issuediv(name from,
                        asset quantity,
                        string memo)
 {
-    print("issuediv happened");
-    // string x = string("FOP");
-    // auto sym = quantity.symbol;
-
-
-    // Hitting the issuediv action directly
-    // INCREASES the total dividends (Y)
-    // Unable to instantiate the DB when hitting it
-    // from the transfer action
-    // FIX: Instantiate DB when engaging from 'transfer'
 
     size_t pos = memo.find(":");
     eosio_assert(pos != string::npos, "Invalid memo");
-    string symbolname = memo.substr(0, pos);
-    string precisionn = memo.substr(pos+1);
 
-    print("classy");
-    // print(name{symbolname});
-    print(name{precisionn});
-    print("checked");
-    name x = name{precisionn};
-    uint64_t y = stoi(precisionn);
-    print(y);
+    string symbolname = memo.substr(0, pos);
+    uint64_t y = stoi(memo.substr(pos+1));
 
     symbol sym = symbol(symbolname, y);
-    print(_self);
-    print("was self");
-    print(sym.code().raw());
     stats statstable(_self, sym.code().raw());
-    print("Table next");
-    print(statstable.get_scope());
     auto existing = statstable.find(sym.code().raw());
     eosio_assert(existing != statstable.end(), "token with symbol does not exist");
-
-    // const auto &st = *existing;
 
     statstable.modify(existing, same_payer, [&](auto &s) {
         s.totaldividends += quantity;
