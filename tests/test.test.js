@@ -124,22 +124,46 @@ describe(`contract`, () => {
     
   })
 
-  test.skip(`test1 can claim his dividend`, async() => {
+  test(`test1 can claim his dividend of 4.5 EOS`, async() => {
 
     const beforeBalance = await getBalance('test1');
+    expect(await lastClaimOf('test1', sym)).toBe(0);
+
 
     await sendTransaction({
       name: 'claim',
       actor: 'test1',
       data: {
         owner: 'test1',
-        tokensym: `${sym},4`
+        tokensym: `4,${sym}`
       }
     })
 
     const afterBalance = await getBalance('test1');
     expect(afterBalance.amount).toBeGreaterThan(beforeBalance.amount)
-    console.log(afterBalance, beforeBalance)
+    expect(afterBalance.amount).toBe(beforeBalance.amount + 4.5);
+    expect(await lastClaimOf('test1', sym)).toBe(4.5);
+
+  })
+
+  test(`test1 can claim again but not receive anything`, async() => {
+
+    const beforeBalance = await getBalance('test1');
+    expect(await lastClaimOf('test1', sym)).toBe(4.5);
+
+
+    await sendTransaction({
+      name: 'claim',
+      actor: 'test1',
+      data: {
+        owner: 'test1',
+        tokensym: `4,${sym}`
+      }
+    })
+
+    const afterBalance = await getBalance('test1');
+    expect(afterBalance.amount).toBe(beforeBalance.amount);
+    expect(await lastClaimOf('test1', sym)).toBe(4.5);
 
   })
 

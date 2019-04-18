@@ -36,7 +36,10 @@ CONTRACT arbaroToken : public eosio::contract
 
     ACTION close(name owner, const symbol &symbol);
 
-    ACTION issuediv(name from,
+    ACTION claim(name owner, symbol tokensym);
+
+
+    void issuediv(name from,
             name to,
             asset quantity,
             string memo);
@@ -79,6 +82,5 @@ CONTRACT arbaroToken : public eosio::contract
 
     void sub_balance(name owner, asset value);
     void add_balance(name owner, asset value, name ram_payer);
-    void claim(name owner, symbol tokensym);
 
 };

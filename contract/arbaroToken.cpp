@@ -88,6 +88,12 @@ void arbaroToken::issuediv(name from,
                        string memo)
 {
 
+    if (from == _self)
+    {
+        // we're sending money, do nothing additional
+        return;
+    }
+
     size_t pos = memo.find(":");
     eosio_assert(pos != string::npos, "Invalid memo");
 
@@ -136,25 +142,35 @@ void arbaroToken::transfer(name from,
 
 void arbaroToken::claim(name owner, symbol tokensym)
 {
-
+    // Gets users Balance and Last Claim
     accounts to_acnts(_self, owner.value);
     auto to = to_acnts.find(tokensym.code().raw());
-    eosio_assert(to != to_acnts.end(), "failed to find account with token");
+    eosio_assert(to != to_acnts.end(), "failed to find account with tokenn");
 
-    uint64_t amount = 1;
+    // Get Symbols Metadata
+    stats statstable(_self, tokensym.code().raw());
+    auto existing = statstable.find(tokensym.code().raw());
+    eosio_assert(existing != statstable.end(), "token with symbol does not exist");
+
+    uint64_t percentr = to->balance.amount / existing->supply.amount;
+    asset portion = existing->totaldividends - to->lastclaim;
+    asset reward = percentr * portion;
+
+    if (reward.amount <= 0) {
+        print("No dividend to claim");
+        return;
+    }
 
     action(
         permission_level{_self, "active"_n},
         "eosio.token"_n,
         "transfer"_n,
-        std::make_tuple(_self, owner, asset(amount, EOS_SYMBOL), string("Dividend Reward")))
+        std::make_tuple(_self, owner, reward, string("Dividend")))
         .send();
 
-
-    // to_acnts.modify(to, same_payer, [&](auto &a) {
-    //     a.lastclaim = value;
-    // });
-
+    to_acnts.modify(to, same_payer, [&](auto &a) {
+        a.lastclaim = existing->totaldividends;
+    });
 
 }
 
@@ -235,7 +251,7 @@ extern "C" void apply(uint64_t receiver, uint64_t code, uint64_t action)
     {
         switch (action)
         {
-            EOSIO_DISPATCH_HELPER(arbaroToken, (create)(issue)(retire)(transfer)(open)(close)(issuediv))
+            EOSIO_DISPATCH_HELPER(arbaroToken, (create)(issue)(retire)(transfer)(open)(close)(claim))
         }
     }
 }
