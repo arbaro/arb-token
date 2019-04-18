@@ -12,7 +12,7 @@ async function action() {
                 from: `test1`,
                 to: CONTRACT_ACCOUNT,
                 quantity: `3.0000 EOS`,
-                memo: 'salt',
+                memo: 'FOP:4',
             },
         })
         console.log(`SUCCESS`)

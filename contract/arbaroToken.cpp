@@ -98,12 +98,24 @@ void arbaroToken::issuediv(name from,
     // from the transfer action
     // FIX: Instantiate DB when engaging from 'transfer'
 
+    size_t pos = memo.find(":");
+    eosio_assert(pos != string::npos, "Invalid memo");
+    string symbolname = memo.substr(0, pos);
+    string precisionn = memo.substr(pos+1);
 
-    symbol sym = symbol("FOP", 4);
+    print("classy");
+    // print(name{symbolname});
+    print(name{precisionn});
+    print("checked");
+    name x = name{precisionn};
+    uint64_t y = stoi(precisionn);
+    print(y);
+
+    symbol sym = symbol(symbolname, y);
     print(_self);
     print("was self");
     print(sym.code().raw());
-    stats statstable("arbtoken"_n, sym.code().raw());
+    stats statstable(_self, sym.code().raw());
     print("Table next");
     print(statstable.get_scope());
     auto existing = statstable.find(sym.code().raw());

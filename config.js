@@ -42,6 +42,7 @@ function getKeys() {
       [CONTRACT_ACCOUNT]: contractPrivate,
       test1: ecc.seedPrivate(`test1`),
       test2: ecc.seedPrivate(`test1`),
+      test3: ecc.seedPrivate(`test1`),
       contoso: "5Jerqaegyi8BTfFLs63rDgskpgrFxAKRc1dRUV8zbVdJUBR3Vgi"
     },
     privateKey => [privateKey, ecc.privateToPublic(privateKey)]

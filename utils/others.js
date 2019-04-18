@@ -38,7 +38,13 @@ const sendTransaction = async args => {
   );
 };
 
-const getBalance = async (contract, account, tokenSymbol = 'EOS') => {
+const parseTokenString = (tokenString) => {
+  const [stringAmount, symbol] = tokenString.split(" ");
+  const amount = Number(stringAmount);
+  return { amount, symbol };
+}
+
+const getBalance = async (account, contract = 'eosio.token', tokenSymbol = 'EOS') => {
   const result = await api.rpc.get_currency_balance(
     contract,
     account,
@@ -46,11 +52,8 @@ const getBalance = async (contract, account, tokenSymbol = 'EOS') => {
   );
   console.log(result, 'was contained in result')
   if (result.length > 0) {
-    const [stringAmount, symbol] = result[0].split(" ");
-    if (symbol !== tokenSymbol)
-      throw "Requested symbol does not match symbol returned by RPC";
-    const amount = Number(stringAmount);
-    return { amount, symbol };
+    return parseTokenString(result[0])
+
   } else {
     return null;
   }
@@ -93,6 +96,7 @@ module.exports = {
   sendTransaction,
   getTable,
   getBalance,
+  parseTokenString,
   getErrorDetail,
   getDeployableFilesFromDir
 };
