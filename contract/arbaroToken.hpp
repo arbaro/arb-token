@@ -80,8 +80,8 @@ CONTRACT arbaroToken : public eosio::contract
     typedef eosio::multi_index<"accounts"_n, account> accounts;
     typedef eosio::multi_index<"stat"_n, currency_stats> stats;
 
-    void sub_balance(name owner, asset value);
-    void add_balance(name owner, asset value, name ram_payer);
+    void sub_balance(name owner, asset value, int64_t supply, asset totaldividends);
+    void add_balance(name owner, asset value, name ram_payer, int64_t supply, asset totaldividends);
     void sendreward(name owner, symbol tokensym, int64_t balance, int64_t supply, asset lastclaim, asset totaldividends);
 
 

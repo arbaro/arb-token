@@ -48,7 +48,7 @@ void arbaroToken::issue(name to, asset quantity, string memo)
         s.supply += quantity;
     });
 
-    add_balance(st.issuer, quantity, st.issuer);
+    add_balance(st.issuer, quantity, st.issuer, st.supply.amount, st.totaldividends);
 
     if (to != st.issuer)
     {
@@ -78,7 +78,7 @@ void arbaroToken::retire(asset quantity, string memo)
         s.supply -= quantity;
     });
 
-    sub_balance(st.issuer, quantity);
+    sub_balance(st.issuer, quantity, st.supply.amount, st.totaldividends);
 }
 
 void arbaroToken::issuediv(name from,
@@ -135,9 +135,8 @@ void arbaroToken::transfer(name from,
 
     auto payer = has_auth(to) ? to : from;
 
-
-    sub_balance(from, quantity);
-    add_balance(to, quantity, payer);
+    sub_balance(from, quantity, st.supply.amount, st.totaldividends);
+    add_balance(to, quantity, payer, st.supply.amount, st.totaldividends);
 }
 
 void arbaroToken::sendreward(name owner, symbol tokensym, int64_t balance, int64_t supply, asset lastclaim, asset totaldividends)
@@ -181,56 +180,45 @@ void arbaroToken::claim(name owner, symbol tokensym)
 
 }
 
-void arbaroToken::sub_balance(name owner, asset value)
+void arbaroToken::sub_balance(name owner, asset value, int64_t supply, asset totaldividends)
 {
     accounts from_acnts(_self, owner.value);
 
     const auto &from = from_acnts.get(value.symbol.code().raw(), "no balance object found");
     eosio_assert(from.balance.amount >= value.amount, "overdrawn balance");
 
-    auto sym = value.symbol;
-    stats statstable(_self, sym.code().raw());
-    auto itr = statstable.find(sym.code().raw());
-
-    if(from.lastclaim != itr->totaldividends) {
-        print("xxx");
-        print(owner);
-        print(value);
-        sendreward(owner, value.symbol, from.balance.amount, itr->supply.amount, from.lastclaim, itr->totaldividends);
+    if(from.lastclaim != totaldividends) {
+        sendreward(owner, value.symbol, from.balance.amount, supply, from.lastclaim, totaldividends);
     }
 
     from_acnts.modify(from, owner, [&](auto &a) {
         a.balance -= value;
-        a.lastclaim = itr->totaldividends;
+        a.lastclaim = totaldividends;
     });
 }
 
-void arbaroToken::add_balance(name owner, asset value, name ram_payer)
+void arbaroToken::add_balance(name owner, asset value, name ram_payer, int64_t supply, asset totaldividends)
 {
     accounts to_acnts(_self, owner.value);
     auto to = to_acnts.find(value.symbol.code().raw());
-
-    auto sym = value.symbol;
-    stats statstable(_self, sym.code().raw());
-    auto itr = statstable.find(sym.code().raw());
 
     if (to == to_acnts.end())
     {
         to_acnts.emplace(ram_payer, [&](auto &a) {
             a.balance = value;
-            a.lastclaim = itr->totaldividends;
+            a.lastclaim = totaldividends;
         });
     }
     else
     {
         
-        if(to->lastclaim != itr->totaldividends) {
-            sendreward(owner, value.symbol, to->balance.amount, itr->supply.amount, to->lastclaim, itr->totaldividends);
+        if(to->lastclaim != totaldividends) {
+            sendreward(owner, value.symbol, to->balance.amount, supply, to->lastclaim, totaldividends);
         }
 
         to_acnts.modify(to, same_payer, [&](auto &a) {
             a.balance += value;
-            a.lastclaim = itr->totaldividends;
+            a.lastclaim = totaldividends;
         });
     }
 }
