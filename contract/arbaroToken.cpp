@@ -124,7 +124,6 @@ void arbaroToken::transfer(name from,
     stats statstable(_self, sym.raw());
     const auto &st = statstable.get(sym.raw());
 
-
     require_recipient(from);
     require_recipient(to);
 

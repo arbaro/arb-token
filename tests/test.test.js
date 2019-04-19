@@ -12,13 +12,6 @@ function makeid(length) {
   return text;
 }
 
-const lastClaimOf = async (account, symbol) => {
-  const tableBalance = await getTable("accounts", account)
-  const obj = tableBalance.rows.filter(x => x.balance.split(" ")[1] === symbol)[0]
-  return parseTokenString(obj.lastclaim).amount
-}
-
-
 const fetchAccount = async (account, symbol) => {
   const table = await getTable("accounts", account)
   const accountObjList = table.rows.filter(x => x.balance.split(" ")[1] == symbol)
@@ -180,8 +173,8 @@ const issueDividend = async (actor, amount, sym) => {
 
 describe(`contract`, () => {
   //   beforeEach(async () => {
-  // const result = await sendTransaction({ name: `testreset` });
-  // console.dir(result);
+  //      const result = await sendTransaction({ name: `testreset` });
+  //      console.dir(result);
   //   });
 
   const sym = makeid(3);
