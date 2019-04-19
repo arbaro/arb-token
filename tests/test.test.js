@@ -12,19 +12,47 @@ function makeid(length) {
   return text;
 }
 
-
 const lastClaimOf = async (account, symbol) => {
   const tableBalance = await getTable("accounts", account)
   const obj = tableBalance.rows.filter(x => x.balance.split(" ")[1] === symbol)[0]
   return parseTokenString(obj.lastclaim).amount
 }
 
-const fetchTotalDividends = async (symbol) => {
-  const table = await getTable("stat", symbol);
-  const sym = table.rows.filter(x => x.supply.split(" ")[1] == symbol)[0]
-  return parseTokenString(sym.totaldividends)
+
+const fetchAccount = async (account, symbol) => {
+  const table = await getTable("accounts", account)
+  const accountObjList = table.rows.filter(x => x.balance.split(" ")[1] == symbol)
+  if (accountObjList.length == 0) return
+  return {
+    balance: parseTokenString(accountObjList[0].balance).amount,
+    lastclaim: parseTokenString(accountObjList[0].lastclaim).amount
+  }
 }
 
+const fetchSymbol = async (symbolName) => {
+  const table = await getTable("stat", symbolName);
+  const symbolObjList = table.rows.filter(x => x.supply.split(" ")[1] == symbolName)
+  if (symbolObjList.length == 0) return
+  const obj = symbolObjList[0]
+  return {
+    ...obj,
+    totaldividends: parseTokenString(obj.totaldividends).amount,
+    max_supply: parseTokenString(obj.max_supply).amount,
+    supply: parseTokenString(obj.supply).amount,
+  }
+}
+
+
+const calcExpectedReward = (balance, lastclaim, supply, totaldividends) => {
+
+  expect(balance).toBeDefined()
+  expect(lastclaim).toBeDefined()
+  expect(supply).toBeDefined()
+  expect(totaldividends).toBeDefined()
+  const percent = balance / supply;
+  const portion = totaldividends - lastclaim;
+  return portion * percent;
+}
 
 const sendShares = async ({
   senderAccount,
@@ -43,8 +71,16 @@ const sendShares = async ({
   const senderBeforeEosBalance = await getBalance(senderAccount);
   const receiverBeforeEosBalance = await getBalance(receivingAccount);
 
-  const x = await fetchTotalDividends(sym)
-  const totalDividends = x.amount
+  const senderAccountData = await fetchAccount(senderAccount, sym);
+  const receiverAccountData = await fetchAccount(receivingAccount, sym);
+  const { totaldividends, supply } = await fetchSymbol(sym);
+
+  if (senderAccountData && receiverAccountData) {
+    const expectedSenderReward = calcExpectedReward(senderAccountData.balance, senderAccountData.lastclaim, supply, totaldividends);
+    const expectedReceiverReward = calcExpectedReward(receiverAccountData.balance, receiverAccountData.lastclaim, supply, totaldividends);
+    expect(expectedSenderReward).toBeCloseTo(senderEosReward, 4)
+    expect(expectedReceiverReward).toBeCloseTo(receivingEosReward, 4)
+  }
 
   await sendTransaction({
     name: 'transfer',
@@ -57,25 +93,71 @@ const sendShares = async ({
     }
   })
 
-  const senderAfterShareBalance = await getBalance(senderAccount, CONTRACT_ACCOUNT, sym);
+  const senderAfterAccountData = await fetchAccount(senderAccount, sym);
   const senderAfterEosBalance = await getBalance(senderAccount);
-  const receiverAfterShareBalance = await getBalance(receivingAccount, CONTRACT_ACCOUNT, sym);
+  const receiverAfterAccountData = await fetchAccount(receivingAccount, sym);
   const receiverAfterEosBalance = await getBalance(receivingAccount);
   const contractAfterBalance = await getBalance(CONTRACT_ACCOUNT);
 
-  expect(senderAfterShareBalance.amount).toBeCloseTo(senderBeforeShareBalance.amount - Number(amount), 4);
-  expect(receiverAfterShareBalance.amount).toBeCloseTo(receiverBeforeShareBalance.amount + Number(amount), 4);
-  expect(receiverAfterEosBalance.amount).toBeCloseTo(receiverBeforeEosBalance.amount + receivingEosReward, 4);
-  expect(senderAfterEosBalance.amount).toBeCloseTo(senderBeforeEosBalance.amount + senderEosReward, 4);
-  expect(contractAfterBalance.amount).toBeCloseTo(contractBeforeBalance.amount - contractLoss, 4);
-  expect(await lastClaimOf(senderAccount, sym)).toBe(totalDividends);
-  expect(await lastClaimOf(receivingAccount, sym)).toBe(totalDividends);
+  expect(senderAfterAccountData.balance).toBeCloseTo(senderBeforeShareBalance - Number(amount), 4);
+  expect(receiverAfterAccountData.balance).toBeCloseTo(receiverBeforeShareBalance + Number(amount), 4);
+
+  expect(receiverAfterEosBalance).toBeCloseTo(receiverBeforeEosBalance + receivingEosReward, 4);
+  expect(senderAfterEosBalance).toBeCloseTo(senderBeforeEosBalance + senderEosReward, 4);
+  expect(contractAfterBalance).toBeCloseTo(contractBeforeBalance - contractLoss, 4);
+  expect(senderAfterAccountData.lastclaim).toBe(totaldividends);
+  expect(receiverAfterAccountData.lastclaim).toBe(totaldividends);
+
+}
+
+const fetchState = async (account, symbol) => {
+  const symbolData = await fetchSymbol(symbol);
+  const accountData = await fetchAccount(account, symbol);
+  const accountBalance = await getBalance(account);
+  const contractBalance = await getBalance(CONTRACT_ACCOUNT);
+
+  return {
+    contractBalance,
+    accountBalance,
+    account: accountData,
+    symbol: symbolData
+  }
+}
+
+const engageClaim = async (actor, owner, symbol, expectedReward) => {
+
+  const beforeState = await fetchState(owner, symbol);
+  const reward = calcExpectedReward(beforeState.account.balance, beforeState.account.lastclaim, beforeState.symbol.supply, beforeState.symbol.totaldividends);
+  if (expectedReward) {
+    expect(reward).toBeCloseTo(expectedReward, 4)
+  }
+
+  await sendTransaction({
+    name: 'claim',
+    actor,
+    data: {
+      owner,
+      tokensym: `4,${symbol}`
+    }
+  })
+
+  const afterState = await fetchState(owner, symbol);
+  expect(reward).toBeCloseTo(afterState.accountBalance - beforeState.accountBalance, 4);
+  expect(afterState.account.lastclaim).toBeCloseTo(afterState.symbol.totaldividends, 4);
+
+  if (beforeState.account.lastclaim == beforeState.symbol.totaldividends) {
+    expect(afterState.accountBalance).toBe(beforeState.accountBalance);
+    expect(afterState.contractBalance).toBe(beforeState.contractBalance)
+  }
+
+  expect(afterState.contractBalance).toBe(beforeState.contractBalance - reward);
+
 }
 
 const issueDividend = async (actor, amount, sym) => {
 
   const contractBeforeBalance = await getBalance(CONTRACT_ACCOUNT);
-  const before = await fetchTotalDividends(sym);
+  const beforeSymbol = await fetchSymbol(sym);
 
   await sendTransaction({
     account: 'eosio.token',
@@ -90,10 +172,10 @@ const issueDividend = async (actor, amount, sym) => {
   })
 
   const contractAfterBalance = await getBalance(CONTRACT_ACCOUNT);
-  const after = await fetchTotalDividends(sym);
+  const afterSymbol = await fetchSymbol(sym);
 
-  expect(after.amount).toBeCloseTo(before.amount + Number(amount), 4)
-  expect(contractAfterBalance.amount).toBeCloseTo(contractBeforeBalance.amount + Number(amount), 4)
+  expect(afterSymbol.totaldividends).toBeCloseTo(beforeSymbol.totaldividends + Number(amount), 4)
+  expect(contractAfterBalance).toBeCloseTo(contractBeforeBalance + Number(amount), 4)
 }
 
 describe(`contract`, () => {
@@ -103,6 +185,11 @@ describe(`contract`, () => {
   //   });
 
   const sym = makeid(3);
+
+  test(`new symbol does not exist`, async () => {
+    const x = await fetchSymbol(sym);
+    expect(x).toBeFalsy();
+  })
 
   test(`contract can create new token for contoso`, async () => {
 
@@ -123,7 +210,6 @@ describe(`contract`, () => {
       totaldividends: `0.0000 EOS`
     })
 
-
   });
 
 
@@ -139,7 +225,8 @@ describe(`contract`, () => {
       }
     })
 
-    expect(await lastClaimOf('test1', sym)).toBe(0)
+    const account = await fetchAccount('test1', sym)
+    expect(account.lastclaim).toBe(0)
   })
 
   test(`test2 can issue a dividend`, async () => {
@@ -147,50 +234,17 @@ describe(`contract`, () => {
   })
 
   test(`test3 can issue a dividend`, async () => {
-    expect(await lastClaimOf('test1', sym)).toBe(0);
+    const account = await fetchAccount('test1', sym);
+    expect(account.lastclaim).toBe(0)
     await issueDividend('test3', '2.5000', sym)
   })
 
   test(`test1 can claim his dividend of 4.5 EOS`, async () => {
-
-    const beforeBalance = await getBalance('test1');
-    expect(await lastClaimOf('test1', sym)).toBe(0);
-
-    await sendTransaction({
-      name: 'claim',
-      actor: 'test1',
-      data: {
-        owner: 'test1',
-        tokensym: `4,${sym}`
-      }
-    })
-
-    const afterBalance = await getBalance('test1');
-    expect(afterBalance.amount).toBeGreaterThan(beforeBalance.amount)
-    expect(afterBalance.amount).toBe(beforeBalance.amount + 4.5);
-    expect(await lastClaimOf('test1', sym)).toBe(4.5);
-
+    await engageClaim('test1', 'test1', sym, 4.5)
   })
 
   test(`test1 can claim again but not receive anything`, async () => {
-
-    const beforeBalance = await getBalance('test1');
-    expect(await lastClaimOf('test1', sym)).toBe(4.5);
-
-
-    await sendTransaction({
-      name: 'claim',
-      actor: 'test1',
-      data: {
-        owner: 'test1',
-        tokensym: `4,${sym}`
-      }
-    })
-
-    const afterBalance = await getBalance('test1');
-    expect(afterBalance.amount).toBe(beforeBalance.amount);
-    expect(await lastClaimOf('test1', sym)).toBe(4.5);
-
+    await engageClaim('test1', 'test1', sym, 0)
   })
 
   test(`test 1 can send 200 shares to test2`, async () => {
@@ -209,30 +263,8 @@ describe(`contract`, () => {
     await issueDividend('test3', '1.5000', sym)
   })
 
-
   test(`test2 can claim his dividend`, async () => {
-
-    const beforeBalance = await getBalance('test2');
-    expect(await lastClaimOf('test2', sym)).toBe(4.5);
-
-    await sendTransaction({
-      name: 'claim',
-      actor: 'test2',
-      data: {
-        owner: 'test2',
-        tokensym: `4,${sym}`
-      }
-    })
-
-    const afterBalance = await getBalance('test2');
-    expect(afterBalance.amount).toBeGreaterThan(beforeBalance.amount)
-    expect(await lastClaimOf('test2', sym)).toBe(6);
-    expect(afterBalance.amount).toBe(Number((beforeBalance.amount + 0.3).toFixed(4)));
-
-
-
-
-
+    await engageClaim('test2', 'test2', sym, 0.3)
   })
 
   test(`test2 can send 50 shares back to test1, triggering test1s claim`, async () => {
@@ -247,33 +279,14 @@ describe(`contract`, () => {
   })
 
   test(`test1 cannot claim after test2 triggering it for him`, async () => {
-
-    const test1ShareBalance = await getBalance('test1', CONTRACT_ACCOUNT, sym);
-    const test1EosBalance = await getBalance('test1');
-
-    await sendTransaction({
-      name: 'claim',
-      actor: 'test1',
-      data: {
-        owner: 'test1',
-        tokensym: `4,${sym}`
-      }
-    })
-
-    const senderAfterShareBalance = await getBalance('test1', CONTRACT_ACCOUNT, sym);
-    const senderAfterEosBalance = await getBalance('test1');
-
-    expect(senderAfterEosBalance.amount).toBe(test1EosBalance.amount);
-    expect(senderAfterShareBalance.amount).toBe(test1ShareBalance.amount);
-
+    await engageClaim('test1', 'test1', sym, 0);
   })
 
   test(`test 3 can issue yet another dividend`, async () => {
-    await issueDividend('test3', '2.5000', sym)
+    await issueDividend('test3', '2.5000', sym);
   })
 
   test(`test1 sends 600 shares to test2 but does not miss out on his own dividend`, async () => {
-
     await sendShares({
       senderAccount: 'test1',
       receivingAccount: 'test2',
@@ -282,8 +295,6 @@ describe(`contract`, () => {
       senderEosReward: 2.125,
       receivingEosReward: 0.375
     });
-
   })
-
 
 });
