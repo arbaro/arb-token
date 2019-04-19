@@ -50,12 +50,14 @@ const getBalance = async (account, contract = 'eosio.token', tokenSymbol = 'EOS'
     account,
     tokenSymbol
   );
-  console.log(result, 'was contained in result')
   if (result.length > 0) {
     return parseTokenString(result[0])
 
   } else {
-    return null;
+    return {
+      amount: 0,
+      symbol: tokenSymbol
+    }
   }
 };
 
