@@ -82,5 +82,7 @@ CONTRACT arbaroToken : public eosio::contract
 
     void sub_balance(name owner, asset value);
     void add_balance(name owner, asset value, name ram_payer);
+    void sendreward(name owner, symbol tokensym, int64_t balance, int64_t supply, asset lastclaim, asset totaldividends);
+
 
 };

@@ -263,7 +263,8 @@ describe(`contract`, () => {
     expect(test1AfterEosBalance.amount).toBe(Number((test1EosBalance.amount + 1.2).toFixed(4)));
     expect(test1AfterShareBalance.amount).toBe(test1ShareBalance.amount + 50);
     expect(await lastClaimOf('test1', sym)).toBe(6);
-
+    const test2AfterShareBalance = await getBalance('test2', CONTRACT_ACCOUNT, sym);
+    expect(test2AfterShareBalance.amount).toBe(150);
 
   })
 
@@ -288,5 +289,60 @@ describe(`contract`, () => {
     expect(test1AfterShareBalance.amount).toBe(test1ShareBalance.amount);
 
   })
+
+  test(`test 3 can issue yet another dividend`, async() => {
+    
+    await sendTransaction({
+      account: 'eosio.token',
+      name: 'transfer',
+      actor: 'test3',
+      data: {
+        from: 'test3',
+        to: "arbtoken",
+        quantity: "2.5000 EOS",
+        memo: `${sym}:4`
+      }
+    })
+
+    const table = await getTable("stat", sym);
+    expect(table.rows).toContainEqual({
+      supply: `1000.0000 ${sym}`,
+      max_supply: `10000000.0000 ${sym}`,
+      issuer: 'contoso',
+      totaldividends: `8.5000 EOS`
+    })
+
+  })
+
+  test(`test1 sends 600 shares to test2 but does not miss out on his own dividend`, async() => {
+    
+    const test1BeforeShareBalance = await getBalance('test1', CONTRACT_ACCOUNT, sym);
+    const test1BeforeEosBalance = await getBalance('test1');
+    const test2BeforeShareBalance = await getBalance('test2', CONTRACT_ACCOUNT, sym);
+    const test2BeforeEosBalance = await getBalance('test2');
+
+    await sendTransaction({
+      name: 'transfer',
+      actor: 'test1',
+      data: {
+        from: 'test1',
+        to: 'test2',
+        quantity: `600.0000 ${sym}`,
+        memo: 'whatever'
+      }
+    })
+
+    const test1AfterShareBalance = await getBalance('test1', CONTRACT_ACCOUNT, sym);
+    const test1AfterEosBalance = await getBalance('test1');
+    const test2AfterShareBalance = await getBalance('test2', CONTRACT_ACCOUNT, sym);
+    const test2AfterEosBalance = await getBalance('test2');
+
+    expect(test1AfterShareBalance.amount).toBe(250)
+    expect(test2AfterShareBalance.amount).toBe(750)
+    expect(test2AfterEosBalance.amount).toBe(test2BeforeEosBalance.amount + 0.375);
+    expect(test1AfterEosBalance.amount).toBe(test1BeforeEosBalance.amount + 2.125);
+
+  })
+
 
 });

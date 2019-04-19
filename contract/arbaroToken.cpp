@@ -135,25 +135,28 @@ void arbaroToken::transfer(name from,
 
     auto payer = has_auth(to) ? to : from;
 
-    // claim(to, quantity.symbol);
-    // claim(from, quantity.symbol);
-
-    // action(
-    //     permission_level{_self, "active"_n},
-    //     _self,
-    //     "claim"_n,
-    //     std::make_tuple(to, quantity.symbol))
-    //     .send();
-
-    // action(
-    //     permission_level{_self, "active"_n},
-    //     _self,
-    //     "claim"_n,
-    //     std::make_tuple(from, quantity.symbol))
-    //     .send();
 
     sub_balance(from, quantity);
     add_balance(to, quantity, payer);
+}
+
+void arbaroToken::sendreward(name owner, symbol tokensym, int64_t balance, int64_t supply, asset lastclaim, asset totaldividends)
+{
+    int64_t percentr = balance * 10000 / supply * 10000;
+    asset portion = totaldividends - lastclaim;
+    asset reward = percentr * portion / 100000000;
+    
+    if (reward.amount <= 0) {
+        print("No dividend to claim");
+        return;
+    }
+    
+    action(
+        permission_level{_self, "active"_n},
+        "eosio.token"_n,
+        "transfer"_n,
+        std::make_tuple(_self, owner, reward, string("Dividend")))
+        .send();
 }
 
 
@@ -169,24 +172,8 @@ void arbaroToken::claim(name owner, symbol tokensym)
     auto existing = statstable.find(tokensym.code().raw());
     eosio_assert(existing != statstable.end(), "token with symbol does not exist");
 
-    // Work out percentage user has of token supply
-    int64_t percentr = to->balance.amount * 10000 / existing->supply.amount * 10000;
-    // Fetch EOS amount they are yet to claim from
-    asset portion = existing->totaldividends - to->lastclaim;
-    // User takes percentage of portion
-    asset reward = percentr * portion / 100000000;
 
-    if (reward.amount <= 0) {
-        print("No dividend to claim");
-        return;
-    }
-
-    action(
-        permission_level{_self, "active"_n},
-        "eosio.token"_n,
-        "transfer"_n,
-        std::make_tuple(_self, owner, reward, string("Dividend")))
-        .send();
+    sendreward(owner, tokensym, to->balance.amount, existing->supply.amount, to->lastclaim, existing->totaldividends);
 
     to_acnts.modify(to, same_payer, [&](auto &a) {
         a.lastclaim = existing->totaldividends;
@@ -201,8 +188,20 @@ void arbaroToken::sub_balance(name owner, asset value)
     const auto &from = from_acnts.get(value.symbol.code().raw(), "no balance object found");
     eosio_assert(from.balance.amount >= value.amount, "overdrawn balance");
 
+    auto sym = value.symbol;
+    stats statstable(_self, sym.code().raw());
+    auto itr = statstable.find(sym.code().raw());
+
+    if(from.lastclaim != itr->totaldividends) {
+        print("xxx");
+        print(owner);
+        print(value);
+        sendreward(owner, value.symbol, from.balance.amount, itr->supply.amount, from.lastclaim, itr->totaldividends);
+    }
+
     from_acnts.modify(from, owner, [&](auto &a) {
         a.balance -= value;
+        a.lastclaim = itr->totaldividends;
     });
 }
 
@@ -226,21 +225,7 @@ void arbaroToken::add_balance(name owner, asset value, name ram_payer)
     {
         
         if(to->lastclaim != itr->totaldividends) {
-            int64_t percentr = to->balance.amount * 10000 / itr->supply.amount * 10000;
-            asset portion = itr->totaldividends - to->lastclaim;
-            asset reward = percentr * portion / 100000000;
-
-            if (reward.amount <= 0) {
-                print("No dividend to claim");
-                return;
-            }
-
-            action(
-                permission_level{_self, "active"_n},
-                "eosio.token"_n,
-                "transfer"_n,
-                std::make_tuple(_self, owner, reward, string("Dividend")))
-                .send();
+            sendreward(owner, value.symbol, to->balance.amount, itr->supply.amount, to->lastclaim, itr->totaldividends);
         }
 
         to_acnts.modify(to, same_payer, [&](auto &a) {
