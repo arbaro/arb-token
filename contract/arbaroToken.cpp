@@ -135,6 +135,23 @@ void arbaroToken::transfer(name from,
 
     auto payer = has_auth(to) ? to : from;
 
+    // claim(to, quantity.symbol);
+    // claim(from, quantity.symbol);
+
+    // action(
+    //     permission_level{_self, "active"_n},
+    //     _self,
+    //     "claim"_n,
+    //     std::make_tuple(to, quantity.symbol))
+    //     .send();
+
+    // action(
+    //     permission_level{_self, "active"_n},
+    //     _self,
+    //     "claim"_n,
+    //     std::make_tuple(from, quantity.symbol))
+    //     .send();
+
     sub_balance(from, quantity);
     add_balance(to, quantity, payer);
 }
@@ -207,9 +224,28 @@ void arbaroToken::add_balance(name owner, asset value, name ram_payer)
     }
     else
     {
-        claim(owner, sym);
+        
+        if(to->lastclaim != itr->totaldividends) {
+            int64_t percentr = to->balance.amount * 10000 / itr->supply.amount * 10000;
+            asset portion = itr->totaldividends - to->lastclaim;
+            asset reward = percentr * portion / 100000000;
+
+            if (reward.amount <= 0) {
+                print("No dividend to claim");
+                return;
+            }
+
+            action(
+                permission_level{_self, "active"_n},
+                "eosio.token"_n,
+                "transfer"_n,
+                std::make_tuple(_self, owner, reward, string("Dividend")))
+                .send();
+        }
+
         to_acnts.modify(to, same_payer, [&](auto &a) {
             a.balance += value;
+            a.lastclaim = itr->totaldividends;
         });
     }
 }

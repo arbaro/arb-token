@@ -230,10 +230,62 @@ describe(`contract`, () => {
     })
 
     const afterBalance = await getBalance('test2');
-    console.log({ beforeBalance, afterBalance })
     expect(afterBalance.amount).toBeGreaterThan(beforeBalance.amount)
     expect(await lastClaimOf('test2', sym)).toBe(6);
-    expect(afterBalance.amount).toBe(beforeBalance.amount + 0.3);
+    expect(afterBalance.amount).toBe(Number((beforeBalance.amount + 0.3).toFixed(4)));
+
+
+    
+
+    
+  })
+
+  test(`test2 can send 50 shares back to test1, triggering test1s claim`, async() => {
+
+    const test1ShareBalance = await getBalance('test1', CONTRACT_ACCOUNT, sym);
+    const test1EosBalance = await getBalance('test1');
+    expect(await lastClaimOf('test1', sym)).toBe(4.5);
+
+
+    await sendTransaction({
+      name: 'transfer',
+      actor: 'test2',
+      data: {
+        from: 'test2',
+        to: 'test1',
+        quantity: `50.0000 ${sym}`,
+        memo: 'whatever'
+      }
+    })
+
+    const test1AfterShareBalance = await getBalance('test1', CONTRACT_ACCOUNT, sym);
+    const test1AfterEosBalance = await getBalance('test1');
+    expect(test1AfterEosBalance.amount).toBe(Number((test1EosBalance.amount + 1.2).toFixed(4)));
+    expect(test1AfterShareBalance.amount).toBe(test1ShareBalance.amount + 50);
+    expect(await lastClaimOf('test1', sym)).toBe(6);
+
+
+  })
+
+  test(`test1 cannot claim after test2 triggering it for him`, async() => {
+
+    const test1ShareBalance = await getBalance('test1', CONTRACT_ACCOUNT, sym);
+    const test1EosBalance = await getBalance('test1');
+
+    await sendTransaction({
+      name: 'claim',
+      actor: 'test1',
+      data: {
+        owner: 'test1',
+        tokensym: `4,${sym}`
+      }
+    })
+
+    const test1AfterShareBalance = await getBalance('test1', CONTRACT_ACCOUNT, sym);
+    const test1AfterEosBalance = await getBalance('test1');
+
+    expect(test1AfterEosBalance.amount).toBe(test1EosBalance.amount);
+    expect(test1AfterShareBalance.amount).toBe(test1ShareBalance.amount);
 
   })
 
