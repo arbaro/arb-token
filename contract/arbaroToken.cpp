@@ -152,20 +152,12 @@ void arbaroToken::claim(name owner, symbol tokensym)
     auto existing = statstable.find(tokensym.code().raw());
     eosio_assert(existing != statstable.end(), "token with symbol does not exist");
 
-    print("Owner");
-    print(owner);
-    int64_t percentr = to->balance.amount / existing->supply.amount;
-    print("Percent");
-    print(percentr);
-
-    print("BalanceAmount");
-    print(to->balance.amount);
-    print("Supply");
-    print(existing->supply.amount);
-    print("Portion");
+    // Work out percentage user has of token supply
+    int64_t percentr = to->balance.amount * 10000 / existing->supply.amount * 10000;
+    // Fetch EOS amount they are yet to claim from
     asset portion = existing->totaldividends - to->lastclaim;
-    print(portion);
-    asset reward = percentr * portion;
+    // User takes percentage of portion
+    asset reward = percentr * portion / 100000000;
 
     if (reward.amount <= 0) {
         print("No dividend to claim");
