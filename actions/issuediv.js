@@ -5,14 +5,15 @@ const { CONTRACT_ACCOUNT } = process.env
 async function action() {
     try {
         const transaction = await sendTransaction({
-            name: `issuediv`,
+            name: `transfer`,
+            account: 'eosio.token',
             actor: 'test1',
             data: {
-    "from": "whatever",
-    "to": "whatever2",
-    "quantity": "6.0000 EOS",
-    "memo": "morewhatever"
-},
+                "from": "test1",
+                "to": CONTRACT_ACCOUNT,
+                "quantity": "6.0000 EOS",
+                "memo": "EUF:4"
+            },
         })
         console.log(`SUCCESS`)
         console.log(

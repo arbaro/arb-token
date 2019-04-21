@@ -179,7 +179,7 @@ describe(`contract`, () => {
 
   const sym = makeid(3);
 
-  test(`new symbol does not exist`, async () => {
+  test(`new symbol of ${sym} does not exist`, async () => {
     const x = await fetchSymbol(sym);
     expect(x).toBeFalsy();
   })

@@ -71,6 +71,18 @@ const getTable = async (tableName, scope = CONTRACT_ACCOUNT) => {
   });
 };
 
+const getTableByScope = async (tableName) => {
+  return await api.rpc.get_table_by_scope({
+    json: true,
+    code: CONTRACT_ACCOUNT,
+    table: tableName,
+    lower_bound: 0,
+    upper_bound: -1,
+    limit: 9999,
+    index_position: 1
+  });
+};
+
 function getErrorDetail(exception) {
   if (exception instanceof RpcError)
     return JSON.stringify(exception.json, null, 2);
@@ -97,5 +109,6 @@ module.exports = {
   getBalance,
   parseTokenString,
   getErrorDetail,
+  getTableByScope,
   getDeployableFilesFromDir
 };

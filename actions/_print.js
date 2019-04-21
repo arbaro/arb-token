@@ -1,4 +1,4 @@
-const { getBalance, getTable, getErrorDetail } = require(`../utils`);
+const { getBalance, getTable, getTableByScope, getErrorDetail } = require(`../utils`);
 
 const { CONTRACT_ACCOUNT } = process.env;
 
@@ -7,11 +7,25 @@ const main = async () => {
 //   console.log(d);
 
 
-  const x = await getTable("stat", "FOP")
-//   const y = await getTable("accounts", "test1")
-//   const p = await getBalance("eosio.token", "test1")
 
-  console.log(x)
+
+  // const x = await getTableByScope('accounts');
+  // console.log(x)
+
+  const x = await getTable("stat", "EUF")
+  const y = await getTableByScope('stat')
+  const scopes = y.rows.map(x => x.scope);
+  console.log(scopes)
+
+  const symbols = []
+  for (var i = 0; i < scopes.length; i++) {
+    const table = await getTable("stat", scopes[i])
+    symbols.push(table.rows[0])
+  }
+
+  console.log(symbols)
+
+  
 };
 
 main();
